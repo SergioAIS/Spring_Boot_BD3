@@ -1,6 +1,7 @@
 import { useState, useEffect  } from 'react'
 import { useNavigate, useParams} from "react-router-dom";
 import { addEmployee, getEmployee, updateEmployee } from '../services/EmployeeService.js'
+import {listDepartments} from "../services/DepartmentService.js";
 
 export const EmployeeComponent = () => {
 
@@ -9,6 +10,16 @@ export const EmployeeComponent = () => {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [address, setAddress] = useState("");
+    const [department, setDepartment] = useState([]);
+    const [departmentId, setDepartmentId] = useState("");
+
+    useEffect(() => {
+        listDepartments().then((response) => {
+            setDepartment(response.data);
+        }).catch((error) => {
+            console.error(error);
+        })
+    }, [])
 
     const navigate = useNavigate();
 
@@ -22,6 +33,7 @@ export const EmployeeComponent = () => {
                 setEmail(response.data.email);
                 setAddress(response.data.address);
                 setPhone(response.data.phone);
+                setDepartmentId(response.data.departmentId);
             }).catch(error => console.log(error));
         }
     }, [id])
@@ -33,6 +45,7 @@ export const EmployeeComponent = () => {
         email: "",
         phone: "",
         address: "",
+        department: ''
     });
 
     function validateForm(){
@@ -89,6 +102,13 @@ export const EmployeeComponent = () => {
             }
         }
 
+        if (departmentId){
+            errorsCopy.department = ""
+        }else{
+            errorsCopy.department = "Select Department"
+            valid = false;
+        }
+
 
         setErrors(errorsCopy);
         return valid;
@@ -98,17 +118,19 @@ export const EmployeeComponent = () => {
     function saveEmployeeorUpdate(e){
         e.preventDefault()
         if (validateForm()){
-            const employee = {firstName, lastName, email, phone, address};
+            const employee = {firstName, lastName, email, phone, address, departmentId};
+            console.log(employee);
+
             if(id){
-                updateEmployee(id,email).then((response) => {
+                updateEmployee(id,employee).then((response) => {
                     console.log(response.data)
-                   navigate('/emplolyees/')
-                }).catch(error => console.log(error));
+                   navigate('/emplolyees')
+                }).catch(error => console.error(error));
             }else {
                 addEmployee(employee).then((response) => {
                     console.log(response.data)
                     navigate('/employees')
-                })
+                }).catch(error => console.error(error));
             }
         }
     }
@@ -180,7 +202,24 @@ export const EmployeeComponent = () => {
                                 {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
                             </div>
                             <br/>
-                            <button className="btn btn-success" type="submit" onClick={saveEmployeeorUpdate}>Submit</button>
+
+                            <div className='form-group mb-2'>
+                                <label className='form-label'>Select Department:</label>
+                                <select
+                                    className={`form-control ${ errors.department ? 'is-invalid': '' }`}
+                                    value={departmentId}
+                                    onChange={(e) => setDepartmentId(e.target.value)}
+                                >
+                                    <option value="Select Department">Select Department</option>
+                                    {
+                                        department.map( department =>
+                                            <option key={department.id} value={department.id} > {department.departmentName}</option>
+                                        )
+                                    }
+                                </select>
+                                { errors.department && <div className='invalid-feedback'> { errors.department} </div> }
+                            </div>
+                            <button className="btn btn-success" onClick={saveEmployeeorUpdate}>Submit</button>
                         </form>
 
                     </div>
